@@ -4,6 +4,7 @@ import { Inter } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Analytics } from "@/components/analytics"
 import { ModeToggle } from "@/components/mode-toggle"
+import { Portrait } from "@/components/portrait"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -30,8 +31,10 @@ export default function RootLayout({ children }: RootLayoutProps) {
                 <nav className="ml-auto text-sm font-medium space-x-6">
                   <Link href="/">Home</Link>
                   <Link href="/about">About</Link>
+                  <a href="https://github.com/tecchu11">Github</a>
                 </nav>
               </div>
+              <Portrait />
             </header>
             <main>{children}</main>
           </div>
