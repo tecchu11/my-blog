@@ -1,7 +1,3 @@
-# Next.js + Contentlayer
+# My blog
 
-A template with Next.js 13 app dir, Contentlayer, Tailwind CSS and dark mode.
-
-https://next-contentlayer.vercel.app
-
-
+Blog using Next.js, Tailwind CSS, and Contentlayer. A little customization from [template](https://github.com/shadcn/next-contentlayer).
