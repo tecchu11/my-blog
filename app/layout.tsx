@@ -4,7 +4,6 @@ import { Inter } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Analytics } from "@/components/analytics"
 import { ModeToggle } from "@/components/mode-toggle"
-import { Portrait } from "@/components/portrait"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -34,7 +33,6 @@ export default function RootLayout({ children }: RootLayoutProps) {
                   <a href="https://github.com/tecchu11">Github</a>
                 </nav>
               </div>
-              <Portrait />
             </header>
             <main>{children}</main>
           </div>
