@@ -6,6 +6,7 @@ import { Code } from "bright"
 Code.theme = {
   dark: "github-dark",
   light: "github-light",
+  lightSelector: "html.light",
 }
 Code.lineNumbers = true
 
