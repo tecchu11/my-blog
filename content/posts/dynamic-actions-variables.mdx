@@ -1,6 +1,6 @@
 ---
 title: Github Actionsで動的なVariablesを実現する
-description: Github Actionsで動的なVariablesを実現する方法を考えた話
+description: Github ActionsにおけるVariablesの扱い方を3パターンのWokrflowから考える
 date: "2023-10-24"
 tags: 
  - GithubActions
@@ -36,7 +36,7 @@ jobs:
 
 この場合は組織,リポジトリ,環境のレベルでそれぞれ値を共有することができて,またリポジトリ内で同じkeyを上書きすることことができます.
 つまり`enviroment` > `repository` > `organization`の優先順位となります.
-1つのWorkflow内で静的な値を参照したい場合はWorkflow内にベタがきするで良いと思いますが,今回考えるのは複数のWorkflow内で値を共有する方法です.
+1つのWorkflow内で静的な値を参照したい場合は上記のようにWorkflow内にベタがきするで良いと思いますが,今回考えるのは複数のWorkflow内で値を共有する方法です.
 
 ## 一つの値を複数のWorkflowで参照したい場合
 
@@ -56,18 +56,18 @@ jobs:
       - run: echo ${{ vars.ENV_NAME }}
 ```
 
-## 環境ごとに動的に複数のWorkflowで参照したい場合
+## 環境ごとに静的な値を複数のWorkflowで参照したい場合
 
 この場合はenvironmentレベルを使うのが良いでしょう.
-そもそも[environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment)を読む限りにおいては保護ルールやWorkflowの対象にできるbranch, tagを制御する仕組みです.
-つまりアプリケーションなりのデプロイをユースケースとして想定されている機能です.
+environmentの[ドキュメント](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment)を読む限りにおいてはWorkflowを動かすことができるるbranch, tagを制御したり,Workflowの実行に承認を入れるなど保護ルールを適用するための仕組みです.
+つまりアプリケーションのデプロイなど保護ルールをどうしても適用したいユースケースが想定された機能です.
 
 > Environments are used to describe a general deployment target like production, staging, or development.
 ...
 You can configure environments with protection rules and secrets. When a workflow job references an environment, the job won't start until all of the environment's protection rules pass. A job also cannot access secrets that are defined in an environment until all the deployment protection rules pass.
 
 
-一例としてはproduction環境とdevelopmentな環境が異なるAWSのアカウントで運用されているとすると下記のようなWorkflowがありえるでしょう.
+環境ごとに複数のWorkflow内で一意の値を参照する一例としては,production環境とdevelopmentな環境が異なるAWSのアカウントで運用されているとすると下記のようなWorkflowがありえるでしょう.
 このような場合は`settings > Environments`からEnvironmentを作成し,そこで環境変数が設定できます.
 
 ```yaml
@@ -89,9 +89,11 @@ jobs:
 
 ## 特定の値を元に静的な値を参照したい場合
 
-例えばgit tagがpushされたことをトリガーとしたWorkflowを作るとして,このときtagが`v1.0.0-rc.1`のようなpre-release versionや`v1.0.0`のようにsufixなしでpushされたらどうでしょう.
-素直にWorkflowを作るのであればこれもenvironmentレベルを使うことになりますが,問題はenvironmentレベルはデプロイを主にユースケースにしています.
-つまり実際にデプロイをしないとき(tagをトリガーにDocker image build)には保護ルールなどが邪魔になったりします.
+例えばgit tagがpushされたことをトリガーとしたWorkflowを作るとして,このときtagが`v1.0.0-dev.1`のようなpre-release versionや`v1.0.0`のようにsufixなしでpushされたらどうでしょう.
+素直にWorkflowを作るのであればこれもenvironmentレベルを使うことになります.
+
+ただし問題はenvironmentレベルはデプロイを主なユースケースにしていることです.
+つまりデプロイは保護ルールを適用したいが,アプリケーションのビルドには適用したくない場合などには保護ルールが邪魔くさく感じることになるでしょう.
 
 このようなとき素直に書くならば下記のようになるのかもしれません.
 
@@ -103,21 +105,15 @@ on:
     tags: 
       - v*
 
-env:
-  RC_ACCOUNT_ID: 123456789012
-  ACCOUNT_ID: 123456789013
-  RC_REGION: ap-northeast-1
-  REGION: ap-northeast-2
-
 jobs:
   test:
      runs-on: ubuntu-latest
      steps:
       - uses: aws-actions/configure-aws-credentials@v4
-        if: ${{ contains(github.ref, 'rc') }}
+        if: ${{ contains(github.ref, 'dev') }}
         with:
-          role-to-assume: arn:aws:iam::${{ env.RC_ACCOUNT_ID }}:role/my-github-actions-role
-          aws-region: ${{ env.RC_REGION }}
+          role-to-assume: arn:aws:iam::${{ env.DEV_ACCOUNT_ID }}:role/my-github-actions-role
+          aws-region: ${{ env.DEV_REGION }}
       - uses: aws-actions/configure-aws-credentials@v4
         if: ${{ !contains(github.ref, 'rc') }}
         with:
@@ -125,7 +121,12 @@ jobs:
           aws-region: ${{ env.REGION }}
 ```
 
-他にも考えられる方法としてはjsonファイルをWorkflowの設定値としてrepositoryに含めておく方法などもありそうですが,個人的にはreposioryレベルでjson形式で登録すれば良いのではないかと考えています.
+上記はtagがpushされたことをトリガーとして保護ルールが不要なWorkflowを動かすことを想定しています.tagがpre-release versionならばdevelopmentアカウントに,安定版であるならばprodcutionに対してWorkflowを動かすことを想定しています.
+このように`if`で制御しかつ環境変数はrepositoryレベルに保持しておけば目的は達成できます.
+
+上記の方法でも良いのですが,同じようなstepが重複することが問題になることもあると思います.
+例えば重複するstepの結果をoutputに出力する時は後続のstepが複雑になることは想像できます.
+そのような時には設定用のjsonファイルをrepositoryに含めて`jq`を使って操作することや,個人的にはreposioryレベルでjson形式で登録すれば良いのではないかと考えています.
 つまり上記Workflowを書き直すと下記のようになります.
 
 ```yaml
@@ -135,12 +136,6 @@ on:
   push:
     tags: 
       - v*
-
-env:
-  RC_ACCOUNT_ID: 123456789012
-  ACCOUNT_ID: 123456789013
-  RC_REGION: ap-northeast-1
-  REGION: ap-northeast-2
 
 jobs:
   evaluate:
@@ -163,7 +158,6 @@ jobs:
      needs: evaluate
      steps:
       - uses: aws-actions/configure-aws-credentials@v4
-        if: ${{ contains(github.ref, 'rc') }}
         env:
           AWS_ACCOUNT_ID: ${{ fromJson(vars.AWS_ACCOUNT_IDS)[needs.evaluate.outputs.env_name] }}
           AWS_REGION: ${{ fromJson(vars.AWS_REGIONS)[needs.evaluate.outputs.env_name] }}
@@ -172,11 +166,10 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 ```
 
-`evaluate`というmeta的なjobもありますが,概ね実現したいことは`fromJson`を利用してrepositoryレベルに登録されているjson文字列を利用しています.
+`evaluate`というmeta的なjobをしれっと追加していますが,概ね実現したいことは[`fromJson`](https://docs.github.com/en/actions/learn-github-actions/expressions#fromjson)を利用してrepositoryレベルに登録されているjson文字列からパースして取得するということです.
 このとき`AWS_ACCOUNT_IDS={ "rc": 123456789012, "default": 123456789013 }`のようにreposoitryには登録しています.
-
-`fromJson`を使うと任意のフィールドにアクセスできるので,このわざわざjsonファイルを設定値としてrepositoryに含める必要もなく,またWorkflowからシームレスにアクセスできることが良さでもあるとおもっています.
 
 ## 終わりに
 
-Github Actionsで構造化されたvariablesが定義できたらいいな...
+Github Actionsで構造化されたvariablesやsecretsが明示的にサポートしているわけではないので,この方法が意図している利用方法かは怪しいのが若干考えものです.
+できればActionsが構造化されたvariablesなどを正式にサポートしてくれれば良いのですが...
