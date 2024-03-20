@@ -15,7 +15,7 @@
     "@types/react": "18.2.40",
     "@types/react-dom": "18.2.17",
     "@vercel/analytics": "^1.0.0",
-    "autoprefixer": "10.4.16",
+    "autoprefixer": "10.4.19",
     "bright": "^0.8.4",
     "contentlayer": "^0.3.2",
     "eslint": "8.55.0",
