@@ -8,22 +8,25 @@ tags:
 
 ## なぜブログを作ったか
 
-とりあえずブログをつくりました.
-位置づけとしてはテックブログという扱いですが, なんとなく日々の日常において書き殴りたい内容を書いておく場所として利用する方針です.
+とりあえずブログをつくりました｡
+位置づけとしてはテックブログという扱いですが､なんとなく日々の日常において書き殴りたい内容を書いておく場所として利用する方針です｡
 
-Next.jsで当ブログは作成しています. 採用した理由としてはチュートリアルで触ったことがあるというのと, なんとなく触ってみようかなというモチベーションがかすかにあったからです.
-このブログをもう少しいじりたいとなれば必然とNext.jsとかReactとか勉強したくなるだろうという算段です.
+Next.jsで当ブログは作成しています｡
+採用した理由としてはチュートリアルで触ったことがあるというのと､なんとなく触ってみようかなというモチベーションがかすかにあったからです｡
+このブログをもう少しいじりたいとなれば必然とNext.jsとかReactとか勉強したくなるだろうという算段です｡
 
 ## 何で作っているのか
 
-Next.jsでブログを作ろうと意気込んだので改めてチュートリアルでも触って0から作ってみようかなと思いました.
-ただ残念ながらこのブログを書いている時点ではNext.jsのApp Routerに対応したチュートリアルがなくPages Router版のみです.
-App Routerのドキュメントを真面目に読んで0から作るにはNext.jsの経験, そもそものTypeScriptやReact.jsの経験も技術力もないので諦めました.
+Next.jsでブログを作ろうと意気込んだので改めてチュートリアルでも触って0から作ってみようかなと思いました｡
+ただ残念ながらこのブログを書いている時点ではNext.jsのApp Routerに対応したチュートリアルがなくPages Router版のみです｡
+App Routerのドキュメントを真面目に読んで0から作るにはNext.jsの経験､そもそものTypeScriptやReact.jsの経験も技術力もないので諦めました｡
 
-ということで[Vercel Templates](https://github.com/shadcn/next-contentlayer)から良さそうなやつを探した結果見つけたのが[shadcn/next-contentlayer](https://github.com/shadcn/next-contentlayer)です.
-App Roterを使っているのとTypeScript, Tailwind CSSと一通りスタンダードな構成かつContentlayerとかいうナウそうな感じのものを使っているということで採用しました. あとホスティングは安定安心のVercelです.
+ということで[Vercel Templates](https://github.com/shadcn/next-contentlayer)から良さそうなやつを探した結果見つけたのが[shadcn/next-contentlayer](https://github.com/shadcn/next-contentlayer)です｡
+App Roterを使っているのとTypeScript､Tailwind CSSと一通りスタンダードな構成かつContentlayerとかいうナウそうな感じのものを使っているということで採用しました｡
+あとホスティングは安定安心のVercelです｡
 
-ちなみにTemplate素のままではSyntax highlightが対応されていなさそうだったので, そこだけIssue[^1]読んで対応しました.
+ちなみにTemplate素のままではSyntax highlightが対応されていなさそうだったので､そこだけIssue[^1]読んで対応しました.
+
 ```go
 package main
 
@@ -33,13 +36,13 @@ func main() {
     fmt.Print("Hello World")
 }
 ```
-とりあえずはいい感じですね.
 
-今後TOCやリンクカードとかもう少しリッチに見せられるように細々と勉強がてらで触っていきたいです.
-ただ本職はサーバーサイドなのでCMSを作るという選択肢もありだなと思っています.
-CMS作るならVercelのソリューションよりかはOktetoのようなfree tierのあるKubernetes環境で動かすかもですね.
+今後TOCやリンクカードとかもう少しリッチに見せられるように細々と勉強がてらで触っていきたいです｡
+ただ本職はサーバーサイドなのでCMSを作るという選択肢もありだなと思っています｡
+CMS作るならVercelのソリューションよりかはOktetoのようなfree tierのあるKubernetes環境で動かすかもですね｡
 
-ちなみにこのブログの初記事は<Link href="/posts/create-lambda-layer">Creating Python Lambda layer</Link>という完全メモ書きレベルのやつです.
+ちなみにこのブログの初記事は<Link href="/posts/create-lambda-layer">Creating Python Lambda layer</Link>という完全メモ書きレベルのやつです｡
+いつかもう少しまともな記事化する予定です｡
 
-[^1]:https://github.com/shadcn/next-contentlayer/issues/16
+[^1]: https://github.com/shadcn/next-contentlayer/issues/16
 
