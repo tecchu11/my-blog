@@ -14,9 +14,9 @@ function sortedPost(posts: Post[]): Post[] {
 export function Articles({ posts }: ArticlesProps) {
   return (
     <>
-      <div className="prose dark:prose-invert">
+      <div>
         {sortedPost(posts).map((post) => (
-          <article key={post._id}>
+          <article className="prose dark:prose-invert" key={post._id}>
             <Link href={post.slug}>
               <h2>{post.title}</h2>
             </Link>
