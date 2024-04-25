@@ -1,0 +1,153 @@
+---
+title: net/httpでRESTを書く際に思うこと
+description: Go歴約半年強で思ったこと
+date: "2024-04-24"
+tags:
+- Tech
+- Go
+---
+
+## 背景
+
+Goを触りはじめておおよそ半年以上経ちました｡
+
+業務ではKotlinをメインにバックエンドの実装をしてきましたが､
+もう少しライトな開発体験が欲しいという背景からGoでREST APIを遊びがてら書いてみた感想､思うことを書きなぐっておこうかなと思います｡
+net/httpのサーバサイドのみを対象にしています｡
+
+## net/httpだけである程度は十分
+
+Kotlinなど､つまりJVMで開発しているとREST APIを作るとなれば何かしらのFWを利用するのがデファクトスタンダードなのかなと思っています｡
+特にSpring Bootなんかがその筆頭で､その他にもQurakusやMicronaut, ピュアKotlinであればKtorなどが利用されているのかなと思います｡
+
+開発のためには何かしらのFWを選定することから始まって(結局SpringBootを選択するのですが)､その上でFWでどうやってやりたいことを実現するか考える｡
+FWの思想に乗ったアプリケーションであれば良いが､実際の業務ではいつのまにかFWの思想からズレていき\.\.\.あれFW使っているのにめんどくさくないか?みたいな状況が過去ありました｡
+
+その反面net/httpというかGoを使ってREST APIを作っていると､必要なものは揃っているし､私の経験上では十分でもあるなってのが正直な感想です｡(普段はマイクロサービスにおけるREST､gRPCとか作っています)
+ちなみにGo製のFWで言えばgin-gonic/ginやルーターライブラリーであるgo-chi/chi, gorilla/muxなどは軽く触ってきましたが､それを使ったうえでもGo 1.22以降であればnet/httpでいいかなって思っています｡
+
+
+## Go 1.22
+
+Goが\<1.22であればおそらくnet/httpだけでRESTを作るという考えは私にはありませんでした｡
+主な理由としては下記です｡
+
+- HTTPメソッドが指定できない
+- パターンにワイルドカードが指定できない
+- カスタムの404,405が返せない
+
+そのためnet/httpを勉強した上でchiを遊びでは使っていました｡
+1.21時代に業務で書いたREST APIはgorilla/muxを使っていました｡
+
+ただ\>=1.22以降であれば上2つの問題は対応されました｡
+もちろんchiやmuxにはより親切な機能がありますが､
+個人的にはなくてもいいかなってのが正直なところです｡
+なので個人的に残る問題というのは3つ目だけです｡
+
+## 404と405
+
+net/httpのIF上ではカスタムの404,405用のHandlerを指定することは不可能だと思います｡
+仮にカスタムの404､405を返すとなれば下記のようになると思います｡
+
+```go
+package main
+
+import (
+    "bytes"
+    "net/http"
+    "net/http/httptest"
+    "testing"
+)
+
+type wrapResponseWriter struct {
+    http.ResponseWriter
+    code int
+}
+
+func (w *wrapResponseWriter) Unwrap() http.ResponseWriter {
+    return w.ResponseWriter
+}
+
+func (w *wrapResponseWriter) WriteHeader(statusCode int) {
+    w.code = statusCode
+}
+
+func (w *wrapResponseWriter) Write(data []byte) (int, error) {
+    w.ResponseWriter.Header().Set("Content-Type", "application/json")
+    w.ResponseWriter.WriteHeader(w.code)
+    switch w.code {
+    case 404:
+        return w.ResponseWriter.Write([]byte(`{"msg":"resource not found"}`))
+    case 405:
+        return w.ResponseWriter.Write([]byte(`{"msg":"method not allowed"}`))
+    default:
+        return w.ResponseWriter.Write(data)
+    }
+}
+
+var wrap = func(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        ww := wrapResponseWriter{ResponseWriter: w}
+        next.ServeHTTP(&ww, r)
+    })
+}
+
+func Test404(t *testing.T) {
+    mux := wrap(http.NewServeMux())
+    w := httptest.NewRecorder()
+    r := httptest.NewRequest("GET", "https://example.com/foo", nil)
+    
+    mux.ServeHTTP(w, r)
+    
+    if w.Code != 404 {
+        t.Error("status code is not 404")
+    }
+    if !bytes.Equal(w.Body.Bytes(), []byte(`{"msg":"resource not found"}`)) {
+        t.Error("body is unmatched")
+    }
+    if w.Header().Get("Content-Type") != "application/json" {
+        t.Error("content type is not application/json")
+    }
+    t.Logf("got response is %v", w)
+}
+```
+
+ResponseWriteをラップするMiddlewareをグローバルに設定し､
+ラップしたResponseWriterでレスポンスを独自のBodyで書いています｡
+また自前のHandlerに対してはアンラップするようなMiddlewareを通すようにしておけば良いと思います｡
+
+ここらへんの内容は1.22でリリースされていたServeMuxのProposalに書いてありました｡
+どうやらResponseWriterをラップするのが一般的らしいです｡
+
+> How would you customise the 405 response? For example, for API servers that need to always return JSON responses. The 404 handler is sort of easy to override with a catch-all / pattern. But for 405 it's harder. You'd have to wrap the ResponseWriter in something that recorded the status code and add some middleware that checked that -- quite tricky to get right. [https://github.com/golang/go/issues/61410#issuecomment-1641072070](https://github.com/golang/go/issues/61410#issuecomment-1641072070)
+
+> Again, no good answer to how to customize the 405. You could write a method-less pattern for each pattern that had a method, but that's not very satisfactory. But really, this is a general problem with the Handler signature: you can't find the status code without writing a ResponseWriter wrapper. That's probably pretty common—I know I've written one or two—so maybe it's not a big deal to have to use it to customize the 405 response. [https://github.com/golang/go/issues/61410#issuecomment-1641985563](https://github.com/golang/go/issues/61410#issuecomment-1641985563)
+
+ただ別Issueのjba-sanのコメントを見て私は別に404､405はカスタマイズできなくてもよいかなと思うようになりました｡(対応としてもあっているのか自信もないですし)
+
+> I'm aware of one use case for serving a custom 404 to a computer: if you want your server to return only JSON. But that's probably unrealistic and also hopeless with the existing net/http package, because there are many places in the code that send a text response. [https://github.com/golang/go/issues/65648#issuecomment-1955328807](https://github.com/golang/go/issues/65648#issuecomment-1955328807)
+
+net/httpをベースとして使うとしたら結局イレギュラーにでもtext応答が紛れ込むことはあるので､
+であればOpenAPIを用意してクライアントコードは生成･利用してもらい､そもそも404や405が出るのを技術で避けてもらうほうが良いと思っています｡
+あとは405を諦めて`/`で404用のHandlerを登録するのが良いかなとも思っています｡
+
+## 依存関係は少ないほうが嬉しい
+
+別にnet/httpだろうとGin,chi,muxなど好きなものを利用するのが一番だと思います｡
+ただそれでもGoの標準パッケージのみに依存する開発が楽かもなと思っています｡
+
+経験上ライブラリーやFWのアップデートへの追従は少なからずリソースを割いてきましたが､
+Goの標準パッケージだけに依存するのであればGoのリリースサイクルに依存するだけです｡
+それにGo1.xは後方互換性がありますしね｡
+実際のアプリケーションはGoの標準パッケージのみだけで開発するなど現実的ではないですが､
+それでも少ない依存関係でアプリケーションのメンテナンス性を向上させるという観点も重要な要素になると思います｡
+
+## まとめ
+
+あくまで個人的なnet/httpに思っていること書いてきただけですが私の経験論的範疇においては
+
+- net/httpで十分(たぶん)
+- もしめんどうなことがあれば好きなライブラリーをいれるし､なんだったらchiぐらいなら移行は簡単そう
+- net/httpだけでRESTを書くならカスタムの404,405は諦め､さらにはAll Catchパターンを使って405も諦める｡
+
+こんなかんじです｡
