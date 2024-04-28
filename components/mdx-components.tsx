@@ -1,5 +1,5 @@
 import NextImage, { ImageProps } from "next/image"
-import { useMDXComponent } from 'next-contentlayer/hooks';
+import { useMDXComponent } from 'next-contentlayer2/hooks';
 import NextLink, { LinkProps } from "next/link";
 import { Code } from "bright"
 
