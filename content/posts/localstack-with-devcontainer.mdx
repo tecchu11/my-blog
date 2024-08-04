@@ -1,0 +1,250 @@
+---
+title: AWS SDKとLocalstack
+description: コンテナ環境下でAWS SDKとLocalstackをどう使うか検討する
+date: "2024-08-04"
+tags:
+- Tech
+- AWS
+---
+
+## TL;DR
+
+- 環境変数を設定してエンドポイントを設定するほうがDRYになると思うよ
+- コンテナ内からLocalstackを使う場合はS3 bucketごとにnetwork aliasを設定しよう
+
+## AWS SDKとLocalstack
+
+ローカル開発においてAWSをエミュレートするためにLocalstackをコンテナで動かす､ということはよくある開発方法だと思います｡
+コンテナで動かしてしまえば､そのコンテナに向くようにAWS SDKを設定するのですが､ホストマシンからGoでとなれば下記のようになります｡
+
+```go
+cfg, _ := config.LoadDefaultConfig(context.Background())
+svc := dynamodb.NewFromConfig(cfg, func(o *dynamodb.Options) {
+    o.BaseEndpoint = aws.String("http://localhost:4566")
+})
+```
+
+あとはアプリケーションの初期化時にローカルか否かでサービスの初期化をする､というのがよくある実装パターンですが､DRYではないなと思っていました｡
+
+そもそも環境変数とかで指定できないのか?と思って調べてみたらありました｡[^1] 
+一部のSDK[^2]においては`AWS_ENDPOINT_URL`や`AWS_ENDPOINT_URL_S3`のように全体･個別サービスごとのエンドポイントを設定可能です｡
+
+なので上記のGoのコードは`AWS_ENDPOINT_URL=http://localhost:4566`のようにすれば不要になります｡
+
+## コンテナからLocalstackへのアクセス
+
+ホストマシンからコンテナにアクセスして開発をしていくならば上記で何も問題はないです｡(たぶん)
+
+コンテナ内(devcontainerで開発環境を整えているなど)場合はどうするかが個人的には厄介かなと思っています｡
+
+例えば下記のようなdocker composeファイルを用意したとします｡
+
+```yaml
+services:
+  app:
+    image: golang:1.22.5
+    tty: true
+  localstack:
+    image: localstack/localstack:3.6
+    ports:
+      - "127.0.0.1:4566:4566"
+      - "127.0.0.1:4510-4559:4510-4559"
+    environment:
+      - DEBUG=1
+    volumes:
+      - "localstack:/var/lib/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+volumes:
+  localstack:
+```
+
+appコンテナに入ってgo mod initしてmain.goを下記のように作っていざ実行!!ってすると失敗します｡
+
+```go
+package main
+
+import (
+  "context"
+  "log"
+  
+  "github.com/aws/aws-sdk-go-v2/aws"
+  "github.com/aws/aws-sdk-go-v2/config"
+  "github.com/aws/aws-sdk-go-v2/service/s3"
+  "github.com/aws/aws-sdk-go-v2/service/s3/types"
+)
+
+func main() {
+    cfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion("ap-northeast-1"))
+    if err != nil {
+        log.Fatal(err)
+    }
+    client := s3.NewFromConfig(cfg)
+    output, err := client.CreateBucket(context.Background(), &s3.CreateBucketInput{
+        Bucket: aws.String("my-bucket"),
+        CreateBucketConfiguration: &types.CreateBucketConfiguration{
+            LocationConstraint: types.BucketLocationConstraintApNortheast1,
+        },
+    })
+    if err != nil {
+        log.Fatal(err)
+    }
+    log.Println(*output.Location)
+}
+
+// ~/app# AWS_ACCESS_KEY_ID=dummy AWS_SECRET_ACCESS_KEY=dummy AWS_ENDPOINT_URL="http://localstack:4566" go run .
+// 2024/08/04 15:27:22 operation error S3: CreateBucket, https response error StatusCode: 0, RequestID: , HostID: , request send failed, Put "http://my-bucket.localstack:4566/": dial tcp: lookup my-bucket.localstack on 127.0.0.11:53: no such host
+// exit status 1
+```
+
+## なぜエラーになるのか
+
+ログにある通り`my-bucket.localstack`に対してDNSルックアップしていることがエラーの原因です｡
+では`my-bucket.localstack`にルックアップするかといえば､それは
+[S3の仕様](https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html)が理由です｡
+
+S3へのリクエストは`virtual-hosted-style`もしくは`path-style`のURLアクセスをサポートしています｡
+
+1. `virtual-hosted-style` https://bucket-name.s3.region-code.amazonaws.com
+2. `path-style` https://s3.region-code.amazonaws.com/bucket-name
+
+`virtual-hosted-style`がデフォルトで適用されているから`my-bucket.localstack`に対してDNSルックアップしているというわけです｡
+(ちなみに`path-style`は将来的には廃止予定のようです｡)
+
+## 対応方法
+
+S3に対する対応方法は2つあります｡
+
+### `path-style`に変更する
+
+オプションで`path-style`｡
+
+ただし将来的に廃止する予定であるということや､そもそもDRYにしたかったので個人的には微妙な対応です｡
+
+```go
+package main
+
+import (
+  "context"
+  "log"
+  
+  "github.com/aws/aws-sdk-go-v2/aws"
+  "github.com/aws/aws-sdk-go-v2/config"
+  "github.com/aws/aws-sdk-go-v2/service/s3"
+  "github.com/aws/aws-sdk-go-v2/service/s3/types"
+)
+
+func main() {
+    cfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion("ap-northeast-1"))
+    if err != nil {
+        log.Fatal(err)
+    }
+    client := s3.NewFromConfig(cfg, func(o *s3.Options) {
+        o.UsePathStyle = true
+    })
+    output, err := client.CreateBucket(context.Background(), &s3.CreateBucketInput{
+        Bucket: aws.String("my-bucket"),
+        CreateBucketConfiguration: &types.CreateBucketConfiguration{
+            LocationConstraint: types.BucketLocationConstraintApNortheast1,
+        },
+    })
+    if err != nil {
+        log.Fatal(err)
+    }
+    log.Println(*output.Location)
+}
+
+// AWS_ACCESS_KEY_ID=dummy AWS_SECRET_ACCESS_KEY=dummy AWS_ENDPOINT_URL="http://localstack:4566" go run .
+// 2024/08/04 15:32:32 http://my-bucket.s3.localhost.localstack.cloud:4566/
+```
+
+### aliasを設定する
+
+Localstackは`virtual-hosted-style`に対応しています｡[^3]
+
+> A Virtual-Hosted style request will have the bucket as part of the Host header of your request. In order for LocalStack to be able to parse the bucket name from your request, your endpoint needs to be prefixed with s3., like s3.localhost.localstack.cloud.
+
+なので`s3.localhost.localstack.cloud`のようなs3 prefix付与してあげれば良いことになります｡
+
+ただし`my-bukcket.s3.localhost.localstack.cloud`へのルックアップには依然として失敗するため､
+bucket事のサブドメインをaliasに設定する必要があります｡
+
+```yaml
+services:
+  app:
+    image: golang:1.22.5
+    tty: true
+  localstack:
+    image: localstack/localstack:3.6
+    ports:
+      - "127.0.0.1:4566:4566"
+      - "127.0.0.1:4510-4559:4510-4559"
+    environment:
+      - DEBUG=1
+    volumes:
+      - "localstack:/var/lib/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+      default:
+        aliases:
+          - "s3.localhost.localstack.cloud"
+          - "my-bucket."s3.localhost.localstack.cloud""
+volumes:
+  localstack:
+```
+
+aliasを設定したうえで下記を実行すれば良いわけです｡
+
+```go
+package main
+
+import (
+  "context"
+  "log"
+  
+  "github.com/aws/aws-sdk-go-v2/aws"
+  "github.com/aws/aws-sdk-go-v2/config"
+  "github.com/aws/aws-sdk-go-v2/service/s3"
+  "github.com/aws/aws-sdk-go-v2/service/s3/types"
+)
+
+func main() {
+    cfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion("ap-northeast-1"))
+    if err != nil {
+        log.Fatal(err)
+    }
+    client := s3.NewFromConfig(cfg)
+    output, err := client.CreateBucket(context.Background(), &s3.CreateBucketInput{
+        Bucket: aws.String("my-bucket"),
+        CreateBucketConfiguration: &types.CreateBucketConfiguration{
+            LocationConstraint: types.BucketLocationConstraintApNortheast1,
+        },
+    })
+    if err != nil {
+        log.Fatal(err)
+    }
+    log.Println(*output.Location)
+}
+
+// ~/app# AWS_ACCESS_KEY_ID=dummy AWS_SECRET_ACCESS_KEY=dummy AWS_ENDPOINT_URL="http://s3.localhost.localstack.cloud:4566" go run .
+// 2024/08/04 16:20:49 http://my-bucket.s3.localhost.localstack.cloud:4566/
+```
+
+取り扱うbucketが限られているのであればaliasを設定することで実装をDRYにできるのがこのパターンのメリットです｡
+
+ただしaliasは現状[wild cardに対応していない](https://github.com/docker/compose/issues/7493)ので､
+数多くのaliasを設定する必要がある場合は大人しく`path-style`を利用するのが良さそうです｡(dnsmasqを使うとwildcardでもいけそうではあるが未検証)
+
+## 結論
+
+色々書いてきましたが､個人的な結論としては下記です｡
+
+- AWS SDKをローカルで利用するときは環境変数でエンドポイントを切り替える
+- devcontainerのようなコンテナ環境からLocalstackにアクセスする場合はcomposeにnetwork aliasを設定する｡
+  - aliasの数が多くなりすぎるようなら`path-style`にする､
+  - もしくはホスト側からアクセスするように開発環境を変更する｡
+
+以上です｡
+
+[^1]: https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html
+[^2]: https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html#ss-endpoints-sdk-compat
+[^3]: https://docs.localstack.cloud/user-guide/aws/s3/#path-style-and-virtual-hosted-style-requests
