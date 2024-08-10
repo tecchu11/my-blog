@@ -9,13 +9,13 @@ tags:
 
 ## TL;DR
 
-- 環境変数を設定してエンドポイントを設定するほうがDRYになると思うよ
-- コンテナ内からLocalstackを使う場合はS3 bucketごとにnetwork aliasを設定しよう
+- 環境変数を使っててエンドポイントを設定することで実装をDRYにする
+- コンテナ内からLocalstackを使う場合はS3バケットごとにnetworkf aliasを設定する
 
 ## AWS SDKとLocalstack
 
-ローカル開発においてAWSをエミュレートするためにLocalstackをコンテナで動かす､ということはよくある開発方法だと思います｡
-コンテナで動かしてしまえば､そのコンテナに向くようにAWS SDKを設定するのですが､ホストマシンからGoでとなれば下記のようになります｡
+ローカル開発においてAWSをエミュレートするためにLocalstackをコンテナで動かすという手法は、よくある開発手法だと思います｡
+その場合､ホストマシンかつGoであれば下記のような実装になります｡
 
 ```go
 cfg, _ := config.LoadDefaultConfig(context.Background())
@@ -24,18 +24,16 @@ svc := dynamodb.NewFromConfig(cfg, func(o *dynamodb.Options) {
 })
 ```
 
-あとはアプリケーションの初期化時にローカルか否かでサービスの初期化をする､というのがよくある実装パターンですが､DRYではないなと思っていました｡
+ただしローカルとそれ以外で実装上考慮する必要があるという店においてDRYではないなと思っていました｡
 
-そもそも環境変数とかで指定できないのか?と思って調べてみたらありました｡[^1] 
-一部のSDK[^2]においては`AWS_ENDPOINT_URL`や`AWS_ENDPOINT_URL_S3`のように全体･個別サービスごとのエンドポイントを設定可能です｡
-
-なので上記のGoのコードは`AWS_ENDPOINT_URL=http://localhost:4566`のようにすれば不要になります｡
+そもそも環境変数kら指定できないのだろうか?と思って調べてみたらありました｡[^1] 
+一部のSDK[^2]は`AWS_ENDPOINT_URL`や`AWS_ENDPOINT_URL_S3`のように全体･個別サービスごとにエンドポイントを設定可能です｡
 
 ## コンテナからLocalstackへのアクセス
 
-ホストマシンからコンテナにアクセスして開発をしていくならば上記で何も問題はないです｡(たぶん)
+ホストマシンからコンテナにアクセスして開発をしていくならば環境変数に設定するだけで問題ないです(たぶん)｡
 
-コンテナ内(devcontainerで開発環境を整えているなど)場合はどうするかが個人的には厄介かなと思っています｡
+ただdevcontainerなどコンテナ内からLocalstackにアクセスする場合はもう少し考慮が必要になります｡
 
 例えば下記のようなdocker composeファイルを用意したとします｡
 
@@ -98,27 +96,26 @@ func main() {
 
 ## なぜエラーになるのか
 
-ログにある通り`my-bucket.localstack`に対してDNSルックアップしていることがエラーの原因です｡
-では`my-bucket.localstack`にルックアップするかといえば､それは
+ログに書いてあるように`my-bucket.localstack`に対してDNSルックアップしていることが原因です｡
+では何故`my-bucket.localstack`にルックアップするかといえば､
 [S3の仕様](https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html)が理由です｡
 
-S3へのリクエストは`virtual-hosted-style`もしくは`path-style`のURLアクセスをサポートしています｡
+S3は下記のような`virtual-hosted-style`もしくは`path-style`のアクセス方法をサポートしています｡
 
 1. `virtual-hosted-style` https://bucket-name.s3.region-code.amazonaws.com
 2. `path-style` https://s3.region-code.amazonaws.com/bucket-name
 
-`virtual-hosted-style`がデフォルトで適用されているから`my-bucket.localstack`に対してDNSルックアップしているというわけです｡
+SDKのデフォルトは`virtual-hosted-style`のため`my-bucket.localstack`に対してDNSルックアップしているというわけです｡
 (ちなみに`path-style`は将来的には廃止予定のようです｡)
 
 ## 対応方法
 
-S3に対する対応方法は2つあります｡
+主な対応方法は下記2つです｡
 
 ### `path-style`に変更する
 
-オプションで`path-style`｡
-
-ただし将来的に廃止する予定であるということや､そもそもDRYにしたかったので個人的には微妙な対応です｡
+`path-style`に設定すれば良いだけですが､
+将来的に廃止される予定であることや､そもそも実装をDRYにしたいので個人的には微妙だなと思っています｡
 
 ```go
 package main
@@ -157,16 +154,17 @@ func main() {
 // 2024/08/04 15:32:32 http://my-bucket.s3.localhost.localstack.cloud:4566/
 ```
 
-### aliasを設定する
+### network aliasを設定する
 
-Localstackは`virtual-hosted-style`に対応しています｡[^3]
+ドキュメントにも記載されていますが､Localstackは特定のエンドポイント形式の場合に`virtual-hosted-style`で処理してくれます｡[^3]
 
 > A Virtual-Hosted style request will have the bucket as part of the Host header of your request. In order for LocalStack to be able to parse the bucket name from your request, your endpoint needs to be prefixed with s3., like s3.localhost.localstack.cloud.
 
-なので`s3.localhost.localstack.cloud`のようなs3 prefix付与してあげれば良いことになります｡
+なので`s3.localhost.localstack.cloud`のようなエンドポイントを指定して､
+Localstackにアクセスできるように設定してあげればよいことになります｡
 
 ただし`my-bukcket.s3.localhost.localstack.cloud`へのルックアップには依然として失敗するため､
-bucket事のサブドメインをaliasに設定する必要があります｡
+バケット事のサブドメインをnetwork aliasに設定する必要があります｡
 
 ```yaml
 services:
@@ -191,8 +189,6 @@ services:
 volumes:
   localstack:
 ```
-
-aliasを設定したうえで下記を実行すれば良いわけです｡
 
 ```go
 package main
@@ -229,14 +225,14 @@ func main() {
 // 2024/08/04 16:20:49 http://my-bucket.s3.localhost.localstack.cloud:4566/
 ```
 
-取り扱うbucketが限られているのであればaliasを設定することで実装をDRYにできるのがこのパターンのメリットです｡
+アプリケーション内で取り扱うバケットが限られているのであれば､実装をDRYにできそうです｡
 
-ただしaliasは現状[wild cardに対応していない](https://github.com/docker/compose/issues/7493)ので､
-数多くのaliasを設定する必要がある場合は大人しく`path-style`を利用するのが良さそうです｡(dnsmasqを使うとwildcardでもいけそうではあるが未検証)
+ただしnetwork aliasは[wild cardに対応していない](https://github.com/docker/compose/issues/7493)ので､
+際限なく設定する必要がある場合は大人しく`path-style`を利用するのが良さそうです(dnsmasqを使うとwildcardでもいけそうではあるが未検証)｡
 
 ## 結論
 
-色々書いてきましたが､個人的な結論としては下記です｡
+開発環境の観点からSDKとLocalstackの使い方を書いてきましたが､､個人的な結論としては下記です｡
 
 - AWS SDKをローカルで利用するときは環境変数でエンドポイントを切り替える
 - devcontainerのようなコンテナ環境からLocalstackにアクセスする場合はcomposeにnetwork aliasを設定する｡
