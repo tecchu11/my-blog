@@ -18,7 +18,7 @@
     "autoprefixer": "10.4.20",
     "bright": "^0.8.4",
     "contentlayer2": "0.5.1",
-    "eslint": "8.57.0",
+    "eslint": "9.13.0",
     "eslint-config-next": "14.2.10",
     "next": "14.2.10",
     "next-contentlayer2": "0.5.1",
