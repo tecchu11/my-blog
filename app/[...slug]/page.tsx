@@ -1,34 +1,30 @@
 import { notFound } from "next/navigation";
-import { Metadata } from "next";
+import type { Metadata } from "next";
 
 import { Mdx } from "@/components/mdx-components";
 import { allPages } from "@/.content-collections/generated";
 
-interface PageProps {
-  params: {
+type PageProps = {
+  params: Promise<{
     slug: string[];
-  };
+  }>;
+};
+
+async function getPage(params: PageProps["params"]) {
+  const { slug } = await params;
+  const key = slug.join("/");
+  return allPages.find((p) => p.slugAsParams === key);
 }
 
-async function getPageFromParams(params: PageProps["params"]) {
-  const slug = params.slug.join("/");
-  const page = allPages.find((page) => page.slugAsParams === slug);
-
-  if (!page) {
-    null;
-  }
-
-  return page;
+export function generateStaticParams() {
+  return allPages.map((p) => ({
+    slug: p.slugAsParams.split("/"),
+  }));
 }
 
-export async function generateMetadata({
-  params,
-}: PageProps): Promise<Metadata> {
-  const page = await getPageFromParams(params);
-
-  if (!page) {
-    return {};
-  }
+export async function generateMetadata(props: PageProps): Promise<Metadata> {
+  const page = await getPage(props.params);
+  if (!page) return {};
 
   return {
     title: page.title,
@@ -36,18 +32,9 @@ export async function generateMetadata({
   };
 }
 
-export async function generateStaticParams(): Promise<PageProps["params"][]> {
-  return allPages.map((page) => ({
-    slug: page.slugAsParams.split("/"),
-  }));
-}
-
-export default async function PagePage({ params }: PageProps) {
-  const page = await getPageFromParams(params);
-
-  if (!page) {
-    notFound();
-  }
+export default async function Page(props: PageProps) {
+  const page = await getPage(props.params);
+  if (!page) notFound();
 
   return (
     <article className="py-6 prose dark:prose-invert">
