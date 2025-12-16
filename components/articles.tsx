@@ -1,14 +1,14 @@
-import { Post } from "@/.contentlayer/generated";
+import { Post } from "@/.content-collections/generated";
 import Link from "next/link";
 
 interface ArticlesProps {
-  posts: Post[]
+  posts: Post[];
 }
 
 function sortedPost(posts: Post[]): Post[] {
   return [...posts].sort((a, b) => {
-    return new Date(b.date).getTime() - new Date(a.date).getTime()
-  })
+    return new Date(b.date).getTime() - new Date(a.date).getTime();
+  });
 }
 
 export function Articles({ posts }: ArticlesProps) {
@@ -16,7 +16,7 @@ export function Articles({ posts }: ArticlesProps) {
     <>
       <div>
         {sortedPost(posts).map((post) => (
-          <article className="prose dark:prose-invert" key={post._id}>
+          <article className="prose dark:prose-invert" key={post.slug}>
             <Link href={post.slug}>
               <h2>{post.title}</h2>
             </Link>
@@ -25,5 +25,5 @@ export function Articles({ posts }: ArticlesProps) {
         ))}
       </div>
     </>
-  )
+  );
 }

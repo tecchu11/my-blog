@@ -1,24 +1,24 @@
-import Link from "next/link"
-import "./globals.css"
-import { Inter } from "next/font/google"
-import { ThemeProvider } from "@/components/theme-provider"
-import { Analytics } from "@/components/analytics"
-import { ModeToggle } from "@/components/mode-toggle"
+import Link from "next/link";
+import "./globals.css";
+import { Inter } from "next/font/google";
+import { Analytics } from "@/components/analytics";
+import { ModeToggle } from "@/components/mode-toggle";
+import { ThemeProvider } from "@/components/theme-provider";
 
-const inter = Inter({ subsets: ["latin"] })
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
   title: "tecchu11 blog",
   description: "tecchu11 blog built by Next.js",
-}
+};
 
 interface RootLayoutProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="ja">
+    <html lang="ja" suppressHydrationWarning>
       <body
         className={`antialiased min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-white ${inter.className}`}
       >
@@ -40,5 +40,5 @@ export default function RootLayout({ children }: RootLayoutProps) {
         </ThemeProvider>
       </body>
     </html>
-  )
+  );
 }

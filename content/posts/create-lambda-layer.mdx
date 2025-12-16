@@ -3,13 +3,14 @@ title: Creating Python Lambda layer
 description: How to create and deploy Python Lambada layer
 date: "2023-10-02"
 tags:
-- AWS
-- Tech
+  - AWS
+  - Tech
 ---
 
 ## How to create
 
 Run bellow command.
+
 ```bash
 mkdir layer
 cp requirements.txt layer/requirements.txt
@@ -17,6 +18,7 @@ docker run -ti -v $(pwd)/layer:/app -w /app --entrypoint /bin/bash public.ecr.aw
 ```
 
 Bellow is result shown.
+
 ```bash
 Collecting httpx==0.25.0 (from -r requirements.txt (line 1))
   Obtaining dependency information for httpx==0.25.0 from https://files.pythonhosted.org/packages/33/0d/d9ce469af019741c8999711d36b270ff992ceb1a0293f73f9f34fdf131e9/httpx-0.25.0-py3-none-any.whl.metadata
@@ -53,6 +55,7 @@ Successfully installed anyio-4.0.0 certifi-2023.7.22 h11-0.14.0 httpcore-0.18.0 
 This command install Python packages within Docker container and packages is installed under `python` dir.
 
 So you can deploy with aws-cli. Run bellow
+
 ```bash
 cd layer
 zip -r lasyer.zip python

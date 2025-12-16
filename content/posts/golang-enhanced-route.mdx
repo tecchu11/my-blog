@@ -3,8 +3,8 @@ title: net/httpでRESTを書く際に思うこと
 description: Go歴約半年強で思ったこと
 date: "2024-04-24"
 tags:
-- Tech
-- Go
+  - Tech
+  - Go
 ---
 
 ## 背景
@@ -25,7 +25,6 @@ FWの思想に乗ったアプリケーションであれば良いが､実際の
 
 その反面net/httpというかGoを使ってREST APIを作っていると､必要なものは揃っているし､私の経験上では十分でもあるなってのが正直な感想です｡(普段はマイクロサービスにおけるREST､gRPCとか作っています)
 ちなみにGo製のFWで言えばgin-gonic/ginやルーターライブラリーであるgo-chi/chi, gorilla/muxなどは軽く触ってきましたが､それを使ったうえでもGo 1.22以降であればnet/httpでいいかなって思っています｡
-
 
 ## Go 1.22
 
@@ -96,9 +95,9 @@ func Test404(t *testing.T) {
     mux := wrap(http.NewServeMux())
     w := httptest.NewRecorder()
     r := httptest.NewRequest("GET", "https://example.com/foo", nil)
-    
+
     mux.ServeHTTP(w, r)
-    
+
     if w.Code != 404 {
         t.Error("status code is not 404")
     }
