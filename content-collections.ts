@@ -30,8 +30,8 @@ const pages = defineCollection({
   directory: "content",
   include: "pages/*.mdx",
   schema: z.object({
-      title: z.string(),
-      description: z.string().optional(),
+    title: z.string(),
+    description: z.string().optional(),
   }),
   transform: async (document, context) => {
     const mdx = await compileMDX(context, document);

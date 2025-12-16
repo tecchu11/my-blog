@@ -2,9 +2,9 @@
 title: Github Actionsで動的なVariablesを実現する
 description: Github ActionsにおけるVariablesの扱い方を3パターンのWokrflowから考える
 date: "2023-10-24"
-tags: 
- - GithubActions
- - Tech
+tags:
+  - GithubActions
+  - Tech
 ---
 
 ## Variables
@@ -24,8 +24,8 @@ env:
 
 jobs:
   test:
-     runs-on: ubuntu-latest
-     steps:
+    runs-on: ubuntu-latest
+    steps:
       - run: echo ${{ env.ENV_NAME }}
 ```
 
@@ -45,7 +45,7 @@ jobs:
 ## 静的な値を複数のWorkflowで参照したい場合
 
 この場合はorganizationもしくはrepositoryレベルを使うのが良いでしょう｡
- `Settings > Secrets and variables > Variables`から環境変数は登録が可能です｡
+`Settings > Secrets and variables > Variables`から環境変数は登録が可能です｡
 この場合変数は`vars context`からkey名で参照可能です｡
 
 ```yaml
@@ -56,8 +56,8 @@ on:
 
 jobs:
   test:
-     runs-on: ubuntu-latest
-     steps:
+    runs-on: ubuntu-latest
+    steps:
       - run: echo ${{ vars.ENV_NAME }}
 ```
 
@@ -68,9 +68,8 @@ environmentは[ドキュメント](https://docs.github.com/en/actions/deployment
 つまりアプリケーションのデプロイなど保護ルールをどうしても適用したいユースケースが想定された機能です.
 
 > Environments are used to describe a general deployment target like production, staging, or development.
-...
-You can configure environments with protection rules and secrets. When a workflow job references an environment, the job won't start until all of the environment's protection rules pass. A job also cannot access secrets that are defined in an environment until all the deployment protection rules pass.
-
+> ...
+> You can configure environments with protection rules and secrets. When a workflow job references an environment, the job won't start until all of the environment's protection rules pass. A job also cannot access secrets that are defined in an environment until all the deployment protection rules pass.
 
 環境ごとに複数のWorkflow内で一意の値を参照する一例としては,production環境とdevelopmentな環境が異なるAWSのアカウントで運用されているとすると下記のようなWorkflowがありえるでしょう.
 このような場合は`settings > Environments`からEnvironmentを作成し,そこで環境変数が設定できます.
@@ -83,9 +82,9 @@ on:
 
 jobs:
   test:
-     runs-on: ubuntu-latest
-     environment: production
-     steps:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/my-github-actions-role
@@ -107,13 +106,13 @@ name: Test
 
 on:
   push:
-    tags: 
+    tags:
       - v*
 
 jobs:
   test:
-     runs-on: ubuntu-latest
-     steps:
+    runs-on: ubuntu-latest
+    steps:
       - uses: aws-actions/configure-aws-credentials@v4
         if: ${{ contains(github.ref, 'dev') }}
         with:
@@ -139,7 +138,7 @@ name: Test
 
 on:
   push:
-    tags: 
+    tags:
       - v*
 
 jobs:
@@ -159,9 +158,9 @@ jobs:
           else
             echo "name=default" >> "$GITHUB_OUTPUT
   test:
-     runs-on: ubuntu-latest
-     needs: evaluate
-     steps:
+    runs-on: ubuntu-latest
+    needs: evaluate
+    steps:
       - uses: aws-actions/configure-aws-credentials@v4
         env:
           AWS_ACCOUNT_ID: ${{ fromJson(vars.AWS_ACCOUNT_IDS)[needs.evaluate.outputs.env_name] }}
