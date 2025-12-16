@@ -1,4 +1,4 @@
-import { Post, allPosts } from "@/.contentlayer/generated"
+import { allPosts } from "@/.content-collections/generated"
 import { Articles } from "@/components/articles"
 
 export default function Home() {
