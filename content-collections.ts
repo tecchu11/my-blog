@@ -15,8 +15,8 @@ const posts = defineCollection({
   }),
   transform: async (document, context) => {
     const mdx = await compileMDX(context, document);
-    const slug = document._meta.filePath.replace(/\.mdx$/, "");
-    const slugAsParams = slug.replace(/^posts\//, "");
+    const slug = `/${document._meta.filePath.replace(/\.mdx$/, "")}`;
+    const slugAsParams = slug.replace(/^\/[^/]+\//, "");
     return {
       ...document,
       mdx,
@@ -36,8 +36,8 @@ const pages = defineCollection({
   }),
   transform: async (document, context) => {
     const mdx = await compileMDX(context, document);
-    const slug = document._meta.filePath.replace(/\.mdx$/, "");
-    const slugAsParams = slug.replace(/^pages\//, "");
+    const slug = `/${document._meta.filePath.replace(/\.mdx$/, "")}`;
+    const slugAsParams = slug.replace(/^\/[^/]+\//, "");
     return {
       ...document,
       mdx,
