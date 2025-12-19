@@ -1,10 +1,11 @@
 ---
 title: AWS SDKとLocalstack
 description: コンテナ環境下でAWS SDKとLocalstackをどう使うか検討する
-date: "2024-08-04"
+date: '2024-08-04'
 tags:
-- Tech
-- AWS
+    - Tech
+    - AWS
+    - Go
 ---
 
 ## TL;DR
@@ -26,7 +27,7 @@ svc := dynamodb.NewFromConfig(cfg, func(o *dynamodb.Options) {
 
 ただしローカルとそれ以外で実装上考慮する必要があるという店においてDRYではないなと思っていました｡
 
-そもそも環境変数kら指定できないのだろうか?と思って調べてみたらありました｡[^1] 
+そもそも環境変数kら指定できないのだろうか?と思って調べてみたらありました｡[^1]
 一部のSDK[^2]は`AWS_ENDPOINT_URL`や`AWS_ENDPOINT_URL_S3`のように全体･個別サービスごとにエンドポイントを設定可能です｡
 
 ## コンテナからLocalstackへのアクセス
@@ -39,21 +40,21 @@ svc := dynamodb.NewFromConfig(cfg, func(o *dynamodb.Options) {
 
 ```yaml
 services:
-  app:
-    image: golang:1.22.5
-    tty: true
-  localstack:
-    image: localstack/localstack:3.6
-    ports:
-      - "127.0.0.1:4566:4566"
-      - "127.0.0.1:4510-4559:4510-4559"
-    environment:
-      - DEBUG=1
-    volumes:
-      - "localstack:/var/lib/localstack"
-      - "/var/run/docker.sock:/var/run/docker.sock"
+    app:
+        image: golang:1.22.5
+        tty: true
+    localstack:
+        image: localstack/localstack:3.6
+        ports:
+            - '127.0.0.1:4566:4566'
+            - '127.0.0.1:4510-4559:4510-4559'
+        environment:
+            - DEBUG=1
+        volumes:
+            - 'localstack:/var/lib/localstack'
+            - '/var/run/docker.sock:/var/run/docker.sock'
 volumes:
-  localstack:
+    localstack:
 ```
 
 appコンテナに入ってgo mod initしてmain.goを下記のように作っていざ実行!!ってすると失敗します｡
@@ -64,7 +65,7 @@ package main
 import (
   "context"
   "log"
-  
+
   "github.com/aws/aws-sdk-go-v2/aws"
   "github.com/aws/aws-sdk-go-v2/config"
   "github.com/aws/aws-sdk-go-v2/service/s3"
@@ -123,7 +124,7 @@ package main
 import (
   "context"
   "log"
-  
+
   "github.com/aws/aws-sdk-go-v2/aws"
   "github.com/aws/aws-sdk-go-v2/config"
   "github.com/aws/aws-sdk-go-v2/service/s3"
@@ -196,7 +197,7 @@ package main
 import (
   "context"
   "log"
-  
+
   "github.com/aws/aws-sdk-go-v2/aws"
   "github.com/aws/aws-sdk-go-v2/config"
   "github.com/aws/aws-sdk-go-v2/service/s3"
@@ -236,11 +237,13 @@ func main() {
 
 - AWS SDKをローカルで利用するときは環境変数でエンドポイントを切り替える
 - devcontainerのようなコンテナ環境からLocalstackにアクセスする場合はcomposeにnetwork aliasを設定する｡
-  - aliasの数が多くなりすぎるようなら`path-style`にする､
-  - もしくはホスト側からアクセスするように開発環境を変更する｡
+    - aliasの数が多くなりすぎるようなら`path-style`にする､
+    - もしくはホスト側からアクセスするように開発環境を変更する｡
 
 以上です｡
 
 [^1]: https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html
+
 [^2]: https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html#ss-endpoints-sdk-compat
+
 [^3]: https://docs.localstack.cloud/user-guide/aws/s3/#path-style-and-virtual-hosted-style-requests

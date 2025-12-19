@@ -1,10 +1,18 @@
 import Link from 'next/link'
 import './globals.css'
-import { Inter } from 'next/font/google'
+import { Inter, Noto_Sans_JP } from 'next/font/google'
 import { ModeToggle } from '@/components/modeToggle'
 import { Analytics } from '@vercel/analytics/react'
 import { ThemeProvider } from 'next-themes'
 
+const notoSansJp = Noto_Sans_JP({
+    subsets: ['latin'],
+    weight: ['400', '700'],
+    preload: false,
+    variable: '--font-noto-sans-jp',
+    display: 'swap',
+    fallback: ['Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'sans-serif'],
+})
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
@@ -20,14 +28,14 @@ export default function RootLayout({ children }: RootLayoutProps) {
     return (
         <html lang="ja" suppressHydrationWarning>
             <body
-                className={`antialiased min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-white ${inter.className}`}
+                className={`antialiased min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-white ${notoSansJp.className}`}
             >
                 <ThemeProvider
                     attribute="class"
                     defaultTheme="system"
                     enableSystem
                 >
-                    <div className="max-w-2xl mx-auto py-10 px-4">
+                    <div className="max-w-3xl mx-auto py-10 px-4">
                         <header>
                             <div className="flex items-center justify-between">
                                 <ModeToggle />
