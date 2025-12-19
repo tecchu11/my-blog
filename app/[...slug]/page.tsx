@@ -1,47 +1,46 @@
-import { notFound } from "next/navigation";
-import type { Metadata } from "next";
+import { notFound } from 'next/navigation'
+import type { Metadata } from 'next'
 
-import { Mdx } from "@/components/mdx-components";
-import { allPages } from "@/.content-collections/generated";
+import { Mdx } from '@/components/mdx'
+import { getPageBySlug, getPages } from '@/lib/page'
 
 type PageProps = {
-  params: Promise<{
-    slug: string[];
-  }>;
-};
-
-async function getPage(params: PageProps["params"]) {
-  const { slug } = await params;
-  const key = slug.join("/");
-  return allPages.find((p) => p.slugAsParams === key);
+    params: Promise<{
+        slug: string[]
+    }>
 }
 
 export function generateStaticParams() {
-  return allPages.map((p) => ({
-    slug: p.slugAsParams.split("/"),
-  }));
+    return getPages().map((p) => ({
+        slug: p.slugAsParams.split('/'),
+    }))
 }
 
-export async function generateMetadata(props: PageProps): Promise<Metadata> {
-  const page = await getPage(props.params);
-  if (!page) return {};
+export async function generateMetadata({
+    params,
+}: PageProps): Promise<Metadata> {
+    const slug = (await params).slug.join('/')
+    const page = getPageBySlug(slug)
+    if (!page) return {}
 
-  return {
-    title: page.title,
-    description: page.description,
-  };
+    return {
+        title: page.title,
+        description: page.description,
+    }
 }
 
-export default async function Page(props: PageProps) {
-  const page = await getPage(props.params);
-  if (!page) notFound();
+export default async function Page({ params }: PageProps) {
+    const slug = (await params).slug.join('/')
+    const page = getPageBySlug(slug)
 
-  return (
-    <article className="py-6 prose dark:prose-invert">
-      <h1>{page.title}</h1>
-      {page.description && <p className="text-xl">{page.description}</p>}
-      <hr />
-      <Mdx code={page.mdx} />
-    </article>
-  );
+    if (!page) notFound()
+
+    return (
+        <article className="py-6 prose dark:prose-invert">
+            <h1>{page.title}</h1>
+            {page.description && <p className="text-xl">{page.description}</p>}
+            <hr />
+            <Mdx code={page.mdx} />
+        </article>
+    )
 }
