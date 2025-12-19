@@ -17,7 +17,9 @@ export function Article({ date, title, tags, children }: ArticleProp) {
                     </p>
                 )}
                 <h1 className="text-4xl font-bold">{title}</h1>
-                {tags.length > 0 && <Tags tags={tags} className='flex flex-row gap-0.5' />}
+                {tags.length > 0 && (
+                    <Tags tags={tags} className="flex flex-row gap-0.5" />
+                )}
             </div>
             <div className="prose dark:prose-invert max-w-fit">{children}</div>
         </article>

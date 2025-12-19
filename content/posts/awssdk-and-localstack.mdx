@@ -1,7 +1,7 @@
 ---
 title: AWS SDKとLocalstack
 description: コンテナ環境下でAWS SDKとLocalstackをどう使うか検討する
-date: '2024-08-04'
+date: '2025-12-20'
 tags:
     - Tech
     - AWS
@@ -38,7 +38,7 @@ svc := dynamodb.NewFromConfig(cfg, func(o *dynamodb.Options) {
 
 例えば下記のようなdocker composeファイルを用意したとします｡
 
-```yaml
+```compose.yaml
 services:
     app:
         image: golang:1.22.5
@@ -59,7 +59,7 @@ volumes:
 
 appコンテナに入ってgo mod initしてmain.goを下記のように作っていざ実行!!ってすると失敗します｡
 
-```go
+```main.go
 package main
 
 import (
@@ -118,7 +118,7 @@ SDKのデフォルトは`virtual-hosted-style`のため`my-bucket.localstack`に
 `path-style`に設定すれば良いだけですが､
 将来的に廃止される予定であることや､そもそも実装をDRYにしたいので個人的には微妙だなと思っています｡
 
-```go
+```main.go
 package main
 
 import (
@@ -167,7 +167,7 @@ Localstackにアクセスできるように設定してあげればよいこと�
 ただし`my-bukcket.s3.localhost.localstack.cloud`へのルックアップには依然として失敗するため､
 バケット事のサブドメインをnetwork aliasに設定する必要があります｡
 
-```yaml
+```compose.yaml
 services:
   app:
     image: golang:1.22.5
@@ -191,7 +191,7 @@ volumes:
   localstack:
 ```
 
-```go
+```main.go
 package main
 
 import (

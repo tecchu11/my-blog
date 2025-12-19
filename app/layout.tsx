@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import './globals.css'
-import { Inter, Noto_Sans_JP } from 'next/font/google'
+import { Noto_Sans_JP } from 'next/font/google'
 import { ModeToggle } from '@/components/modeToggle'
 import { Analytics } from '@vercel/analytics/react'
 import { ThemeProvider } from 'next-themes'
@@ -13,7 +13,6 @@ const notoSansJp = Noto_Sans_JP({
     display: 'swap',
     fallback: ['Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'sans-serif'],
 })
-const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
     title: 'tecchu11 blog',
