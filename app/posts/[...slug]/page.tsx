@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
-import { Mdx } from "@/components/mdx-components";
+import { Mdx } from "@/components/mdx";
 import { Tags } from "@/components/tags";
-import { allPosts } from "@/.content-collections/generated";
+import { getPostBySlug, getPosts } from "@/lib/post";
 
 type PostProps = {
   params: Promise<{
@@ -11,20 +11,17 @@ type PostProps = {
   }>;
 };
 
-async function getPost(params: PostProps["params"]) {
-  const { slug } = await params;
-  const key = slug.join("/");
-  return allPosts.find((p) => p.slugAsParams === key);
-}
-
 export function generateStaticParams() {
-  return allPosts.map((p) => ({
-    slug: p.slugAsParams.split("/"),
+  return getPosts().map((post) => ({
+    slug: post.slugAsParams.split("/"),
   }));
 }
 
-export async function generateMetadata(props: PostProps): Promise<Metadata> {
-  const post = await getPost(props.params);
+export async function generateMetadata({
+  params,
+}: PostProps): Promise<Metadata> {
+  const key = (await params).slug.join("/");
+  const post = getPostBySlug(key);
   if (!post) return {};
 
   return {
@@ -33,8 +30,10 @@ export async function generateMetadata(props: PostProps): Promise<Metadata> {
   };
 }
 
-export default async function PostPage(props: PostProps) {
-  const post = await getPost(props.params);
+export default async function PostPage({ params }: PostProps) {
+  const key = (await params).slug.join("/");
+  const post = getPostBySlug(key);
+
   if (!post) notFound();
 
   return (
