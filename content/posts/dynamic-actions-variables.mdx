@@ -1,10 +1,10 @@
 ---
 title: Github Actionsで動的なVariablesを実現する
 description: Github ActionsにおけるVariablesの扱い方を3パターンのWokrflowから考える
-date: "2023-10-24"
+date: '2023-10-24'
 tags:
-  - GithubActions
-  - Tech
+    - GithubActions
+    - Tech
 ---
 
 ## Variables
@@ -17,16 +17,16 @@ Github ActionsにはWorkflow内で環境変数をいい感じに扱う方法と�
 name: Test
 
 on:
-  pull_request:
+    pull_request:
 
 env:
-  ENV_NAME: prodcution
+    ENV_NAME: prodcution
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo ${{ env.ENV_NAME }}
+    test:
+        runs-on: ubuntu-latest
+        steps:
+            - run: echo ${{ env.ENV_NAME }}
 ```
 
 ただ複数のWorkflow内で環境変数を共有したい場合はVariableを積極的に使うことになると思います｡
@@ -52,13 +52,13 @@ jobs:
 name: Test
 
 on:
-  pull_request:
+    pull_request:
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo ${{ vars.ENV_NAME }}
+    test:
+        runs-on: ubuntu-latest
+        steps:
+            - run: echo ${{ vars.ENV_NAME }}
 ```
 
 ## 環境ごとに静的な値を複数のWorkflowで参照したい場合
@@ -78,17 +78,17 @@ environmentは[ドキュメント](https://docs.github.com/en/actions/deployment
 name: Test
 
 on:
-  pull_request:
+    pull_request:
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/my-github-actions-role
-          aws-region: ${{ vars.AWS_REGION }}
+    test:
+        runs-on: ubuntu-latest
+        environment: production
+        steps:
+            - uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/my-github-actions-role
+                  aws-region: ${{ vars.AWS_REGION }}
 ```
 
 ## 特定の値を元に静的な値を参照したい場合
@@ -105,24 +105,24 @@ jobs:
 name: Test
 
 on:
-  push:
-    tags:
-      - v*
+    push:
+        tags:
+            - v*
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: aws-actions/configure-aws-credentials@v4
-        if: ${{ contains(github.ref, 'dev') }}
-        with:
-          role-to-assume: arn:aws:iam::${{ env.DEV_ACCOUNT_ID }}:role/my-github-actions-role
-          aws-region: ${{ env.DEV_REGION }}
-      - uses: aws-actions/configure-aws-credentials@v4
-        if: ${{ !contains(github.ref, 'rc') }}
-        with:
-          role-to-assume: arn:aws:iam::${{ env.ACCOUNT_ID }}:role/my-github-actions-role
-          aws-region: ${{ env.REGION }}
+    test:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: aws-actions/configure-aws-credentials@v4
+              if: ${{ contains(github.ref, 'dev') }}
+              with:
+                  role-to-assume: arn:aws:iam::${{ env.DEV_ACCOUNT_ID }}:role/my-github-actions-role
+                  aws-region: ${{ env.DEV_REGION }}
+            - uses: aws-actions/configure-aws-credentials@v4
+              if: ${{ !contains(github.ref, 'rc') }}
+              with:
+                  role-to-assume: arn:aws:iam::${{ env.ACCOUNT_ID }}:role/my-github-actions-role
+                  aws-region: ${{ env.REGION }}
 ```
 
 上記はtagがpushされたことをトリガーとして保護ルールが不要なWorkflowを動かすことを想定しています.tagがpre-release versionならばdevelopmentアカウントに,安定版であるならばprodcutionに対してWorkflowを動かすことを想定しています.
@@ -137,37 +137,37 @@ jobs:
 name: Test
 
 on:
-  push:
-    tags:
-      - v*
+    push:
+        tags:
+            - v*
 
 jobs:
-  evaluate:
-    runs-on: ubutns-latest
-    outputs:
-      env_name: ${{ steps.evaluate-env.outputs.name }}
-    steps:
-      - name: evaluate env
-        id: evaluate-env
-        shell: bash
-        env:
-          is_rc: ${{ contains(github.ref, 'rc') }}
-        run: |
-          if $is_rc; then
-            echo "name=rc" >> "$GITHUB_OUTPUT"
-          else
-            echo "name=default" >> "$GITHUB_OUTPUT
-  test:
-    runs-on: ubuntu-latest
-    needs: evaluate
-    steps:
-      - uses: aws-actions/configure-aws-credentials@v4
-        env:
-          AWS_ACCOUNT_ID: ${{ fromJson(vars.AWS_ACCOUNT_IDS)[needs.evaluate.outputs.env_name] }}
-          AWS_REGION: ${{ fromJson(vars.AWS_REGIONS)[needs.evaluate.outputs.env_name] }}
-        with:
-          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/my-github-actions-role
-          aws-region: ${{ env.AWS_REGION }}
+    evaluate:
+        runs-on: ubutns-latest
+        outputs:
+            env_name: ${{ steps.evaluate-env.outputs.name }}
+        steps:
+            - name: evaluate env
+              id: evaluate-env
+              shell: bash
+              env:
+                  is_rc: ${{ contains(github.ref, 'rc') }}
+              run: |
+                  if $is_rc; then
+                    echo "name=rc" >> "$GITHUB_OUTPUT"
+                  else
+                    echo "name=default" >> "$GITHUB_OUTPUT
+    test:
+        runs-on: ubuntu-latest
+        needs: evaluate
+        steps:
+            - uses: aws-actions/configure-aws-credentials@v4
+              env:
+                  AWS_ACCOUNT_ID: ${{ fromJson(vars.AWS_ACCOUNT_IDS)[needs.evaluate.outputs.env_name] }}
+                  AWS_REGION: ${{ fromJson(vars.AWS_REGIONS)[needs.evaluate.outputs.env_name] }}
+              with:
+                  role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/my-github-actions-role
+                  aws-region: ${{ env.AWS_REGION }}
 ```
 
 `evaluate`というmeta的なjobをしれっと追加していますが,概ね実現したいことは[`fromJson`](https://docs.github.com/en/actions/learn-github-actions/expressions#fromjson)を利用してrepositoryレベルに登録されているjson文字列からパースして取得するということです.
