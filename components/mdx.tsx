@@ -1,8 +1,8 @@
-import Image, { ImageProps } from 'next/image'
+import NextImage, { ImageProps } from 'next/image'
 import { MDXContent } from '@content-collections/mdx/react'
 import { LinkProps } from 'next/link'
 import { Code } from 'bright'
-import Link from 'next/link'
+import NextLink from 'next/link'
 
 Code.theme = {
     dark: 'github-dark',
@@ -12,8 +12,8 @@ Code.theme = {
 Code.lineNumbers = true
 
 const components = {
-    Image: (props: ImageProps) => <Image {...props} />,
-    Link: (props: LinkProps) => <Link {...props} />,
+    Image: (props: ImageProps) => <NextImage {...props} />,
+    Link: (props: LinkProps) => <NextLink {...props} />,
     pre: Code,
 }
 
