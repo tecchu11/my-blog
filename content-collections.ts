@@ -1,5 +1,7 @@
 import { defineCollection, defineConfig } from '@content-collections/core'
 import { compileMDX } from '@content-collections/mdx'
+import rehypeSlug from 'rehype-slug'
+import toc from 'rehype-toc'
 import { z } from 'zod'
 
 const posts = defineCollection({
@@ -15,7 +17,10 @@ const posts = defineCollection({
         content: z.string(),
     }),
     transform: async (document, context) => {
-        const mdx = await compileMDX(context, document)
+        const mdx = await compileMDX(context, document, {
+            remarkPlugins: [],
+            rehypePlugins: [rehypeSlug, [toc, {}]],
+        })
         const slug = `/${document._meta.filePath.replace(/\.mdx$/, '')}`
         const slugAsParams = slug.replace(/^\/[^/]+\//, '')
         return {
