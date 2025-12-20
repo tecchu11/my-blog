@@ -1,3 +1,25 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/typography';
 @variant dark (&:where(.dark, .dark *));
+
+@layer utilities {
+    .prose :not(pre) > code {
+        background-color: rgb(229 231 235);
+        border-radius: 0.5rem;
+        padding: 0.125rem 0.25rem;
+    }
+
+    .dark .prose :not(pre) > code {
+        background-color: rgb(75 85 99);
+    }
+
+    .prose code::before,
+    .prose code::after {
+        content: none;
+    }
+
+    .prose blockquote p:first-of-type::before,
+    .prose blockquote p:last-of-type::after {
+        content: none;
+    }
+}
