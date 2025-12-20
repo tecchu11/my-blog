@@ -11,7 +11,7 @@ interface ArticleLinkProps {
 
 function ArticleLink({ post }: ArticleLinkProps) {
     return (
-        <div className="flex flex-col gap-2 p-2">
+        <div className="flex flex-col gap-2">
             <p className="text-slate-700 dark:text-slate-200">
                 {new Date(post.date).toLocaleDateString('ja-JP')}
             </p>
@@ -25,7 +25,7 @@ function ArticleLink({ post }: ArticleLinkProps) {
 
 export function Articles({ posts }: ArticlesProps) {
     return (
-        <div className="max-w-full flex flex-col gap-6 p-4">
+        <div className="max-w-full flex flex-col gap-8 py-4">
             {posts.map((post) => (
                 <ArticleLink key={post.slugAsParams} post={post} />
             ))}

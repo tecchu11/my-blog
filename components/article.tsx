@@ -16,7 +16,7 @@ export function Article({ date, title, tags, children }: ArticleProp) {
                         {date.toLocaleDateString('ja-JP')}
                     </p>
                 )}
-                <h1 className="text-4xl font-bold">{title}</h1>
+                <h1 className="text-3xl font-bold">{title}</h1>
                 {tags.length > 0 && (
                     <Tags tags={tags} className="flex flex-row gap-0.5" />
                 )}
