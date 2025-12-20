@@ -5,11 +5,10 @@ import { Code } from 'bright'
 import NextLink from 'next/link'
 
 Code.theme = {
-    dark: 'github-dark',
-    light: 'github-light',
+    dark: 'material-darker',
+    light: 'material-lighter',
     lightSelector: 'html.light',
 }
-Code.lineNumbers = true
 
 const components = {
     Image: (props: ImageProps) => <NextImage {...props} />,

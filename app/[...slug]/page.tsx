@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 
 import { Mdx } from '@/components/mdx'
 import { getPageBySlug, getPages } from '@/lib/page'
+import { Article } from '@/components/article'
 
 type PageProps = {
     params: Promise<{
@@ -36,11 +37,8 @@ export default async function Page({ params }: PageProps) {
     if (!page) notFound()
 
     return (
-        <article className="py-6 prose dark:prose-invert">
-            <h1>{page.title}</h1>
-            {page.description && <p className="text-xl">{page.description}</p>}
-            <hr />
+        <Article title={page.title} tags={[]}>
             <Mdx code={page.mdx} />
-        </article>
+        </Article>
     )
 }
