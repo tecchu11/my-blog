@@ -13,14 +13,14 @@ Github ActionsにはWorkflow内で環境変数をいい感じに扱う方法と�
 ドキュメントにある通り1つのWorkflowに対する環境変数の扱い方は以下のようになります｡
 1つのWorkflow内で静的な値を参照したい場合は上記のようにWorkflow内にベタ書きで必要十分と思っています｡
 
-```yaml
+```example.yaml
 name: Test
 
 on:
     pull_request:
 
 env:
-    ENV_NAME: prodcution
+    ENV_NAME: production
 
 jobs:
     test:
@@ -48,7 +48,7 @@ jobs:
 `Settings > Secrets and variables > Variables`から環境変数は登録が可能です｡
 この場合変数は`vars context`からkey名で参照可能です｡
 
-```yaml
+```example.yaml
 name: Test
 
 on:
@@ -74,7 +74,7 @@ environmentは[ドキュメント](https://docs.github.com/en/actions/deployment
 環境ごとに複数のWorkflow内で一意の値を参照する一例としては,production環境とdevelopmentな環境が異なるAWSのアカウントで運用されているとすると下記のようなWorkflowがありえるでしょう.
 このような場合は`settings > Environments`からEnvironmentを作成し,そこで環境変数が設定できます.
 
-```yaml
+```example.yaml
 name: Test
 
 on:
@@ -101,7 +101,7 @@ jobs:
 
 このようなとき素直に書くならば下記のようになるのかもしれません.
 
-```yaml
+```example.yaml
 name: Test
 
 on:
@@ -133,7 +133,7 @@ jobs:
 そのような時には設定用のjsonファイルをrepositoryに含めて`jq`を使って操作することや,個人的にはreposioryレベルでjson形式で登録すれば良いのではないかと考えています.
 つまり上記Workflowを書き直すと下記のようになります.
 
-```yaml
+```example.yaml
 name: Test
 
 on:

@@ -23,3 +23,12 @@
         content: none;
     }
 }
+@layer components {
+    .toc {
+        @apply border border-slate-200/50 dark:border-white/10 p-4 md:px-8 md:py-6 rounded-xs
+           bg-slate-50/30 dark:bg-white/5;
+        a {
+            text-decoration: none !important;
+        }
+    }
+}

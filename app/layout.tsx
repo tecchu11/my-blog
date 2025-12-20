@@ -5,14 +5,7 @@ import { ModeToggle } from '@/components/modeToggle'
 import { Analytics } from '@vercel/analytics/react'
 import { ThemeProvider } from 'next-themes'
 
-const notoSansJp = Noto_Sans_JP({
-    subsets: ['latin'],
-    weight: ['400', '700'],
-    preload: false,
-    variable: '--font-noto-sans-jp',
-    display: 'swap',
-    fallback: ['Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'sans-serif'],
-})
+const notoSansJp = Noto_Sans_JP()
 
 export const metadata = {
     title: 'tecchu11 blog',
