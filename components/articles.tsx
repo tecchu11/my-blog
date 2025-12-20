@@ -1,25 +1,33 @@
 import { Post } from '@/.content-collections/generated'
 import Link from 'next/link'
-import { Tags } from './tags'
 
 interface ArticlesProps {
     posts: Post[]
 }
 
+interface ArticleLinkProps {
+    post: Post
+}
+
+function ArticleLink({ post }: ArticleLinkProps) {
+    return (
+        <div className="flex flex-col gap-2 p-2">
+            <p className="text-slate-700 dark:text-slate-200">
+                {new Date(post.date).toLocaleDateString('ja-JP')}
+            </p>
+            <Link href={post.slug} className="text-2xl font-bold">
+                {post.title}
+            </Link>
+            <p>{post.description}</p>
+        </div>
+    )
+}
+
 export function Articles({ posts }: ArticlesProps) {
     return (
-        <div className="prose dark:prose-invert max-w-full">
+        <div className="max-w-full flex flex-col gap-6 p-4">
             {posts.map((post) => (
-                <div key={post.slug}>
-                    <Link href={post.slug}>
-                        <h2 className="text-2xl underline">{post.title}</h2>
-                    </Link>
-                    <Tags
-                        className="flex flex-row gap-0.5 justify-start"
-                        tags={post.tags}
-                    />
-                    <p className="text-sm">{post.description}</p>
-                </div>
+                <ArticleLink key={post.slugAsParams} post={post} />
             ))}
         </div>
     )
