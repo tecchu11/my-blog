@@ -1,9 +1,11 @@
 import { Post, allPosts } from '@/.content-collections/generated'
 
 export function getPosts(): Post[] {
-    return [...allPosts].sort((a, b) => {
-        return new Date(b.date).getTime() - new Date(a.date).getTime()
-    })
+    return [...allPosts]
+        .filter((post) => post.isPublished)
+        .sort((a, b) => {
+            return new Date(b.date).getTime() - new Date(a.date).getTime()
+        })
 }
 
 export function getPostBySlug(slug: string): Post | undefined {
