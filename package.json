@@ -33,7 +33,7 @@
         "@content-collections/core": "^0.13.0",
         "@content-collections/mdx": "^0.2.2",
         "@content-collections/next": "^0.2.9",
-        "eslint": "^9.39.2",
+        "eslint": "^10.0.0",
         "eslint-config-next": "^16.1.0",
         "eslint-config-prettier": "^10.1.8",
         "prettier": "^3.7.4",
