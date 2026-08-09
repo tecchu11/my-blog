@@ -1,13 +1,5 @@
 {
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
     "extends": ["config:recommended", "group:allNonMajor"],
-    "timezone": "Asia/Tokyo",
-    "packageRules": [
-        {
-            "description": "eslint-plugin-react (pulled in by eslint-config-next) does not support ESLint 10 yet; it still calls context.getFilename(), removed in v10. Keep major eslint updates listed on the Dependency Dashboard for manual approval instead of blocking them, so 10.x stays visible and can be retried by ticking its checkbox once upstream catches up. Minor and patch updates on 9.x keep flowing automatically.",
-            "matchPackageNames": ["eslint"],
-            "matchUpdateTypes": ["major"],
-            "dependencyDashboardApproval": true
-        }
-    ]
+    "timezone": "Asia/Tokyo"
 }
